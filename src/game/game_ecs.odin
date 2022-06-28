@@ -15,12 +15,13 @@ Ent_Tags :: enum {
 Ent_Tag_Set :: bit_set[Ent_Tags]
 
 Ent_Props :: struct {
-	tags: Ent_Tag_Set,
-	pos:  V2,
-	char: rune,
+	tags:       Ent_Tag_Set,
+	pos:        Tile_Pos,
+	char:       rune,
 	// TODO color
+	pos_offset: V2,
 	// for the linked list of available ents
-	next: Ent,
+	next:       Ent,
 }
 
 Ents :: #soa[MAX_ENTS]Ent_Props

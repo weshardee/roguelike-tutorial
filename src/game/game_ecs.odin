@@ -3,13 +3,15 @@ package roguelike
 import "core:fmt"
 import sdl "vendor:sdl2"
 
+import "../gfx"
+
 MAX_ENTS :: Ent(1024)
 
 Ent :: distinct int
 
 Ent_Tags :: enum {
 	Player,
-	Runed,
+	Spacial,
 }
 
 Ent_Tag_Set :: bit_set[Ent_Tags]
@@ -18,8 +20,9 @@ Ent_Props :: struct {
 	tags:       Ent_Tag_Set,
 	pos:        Tile_Pos,
 	char:       rune,
-	// TODO color
+	color:      gfx.ColorRGB,
 	pos_offset: V2,
+	hp:         int,
 	// for the linked list of available ents
 	next:       Ent,
 }

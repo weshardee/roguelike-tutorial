@@ -21,17 +21,17 @@ TILEMAP :: #load("dejavu10x10_gs_tc.png")
 
 PLAYER_DIR_DELAY :: 0.1
 DT :: 1.0 / 60
-STEP_SPEED :: 30 * DT
+OFFSET_SPEED :: 10 * DT
+STEP_HEIGHT :: 0.3
 
 V2 :: [2]f32
 Tile_Pos :: [2]int
+ColorRGB :: gfx.ColorRGB
 
 State :: struct {
-	tileset:                  Tileset,
-	player_e:                 Ent,
-	player_pending_dir:       Tile_Pos,
-	player_pending_dir_delay: f32,
-	ecs:                      Ecs,
+	tileset:  Tileset,
+	player_e: Ent,
+	ecs:      Ecs,
 }
 
 Tileset :: struct {
@@ -51,21 +51,22 @@ load :: proc() {
 	ents := get_ents()
 
 	gfx.init()
+	init_ecs()
 
 	state.tileset = load_tileset(TILEMAP, 10)
 
-	state.player_e = push_ent({.Player, .Runed})
+	state.player_e = push_ent({.Player, .Spacial})
 	ents[state.player_e].char = '@'
+	ents[state.player_e].color = gfx.WHITE
+
+	npc_e := push_ent({.Spacial})
+	ents[npc_e].char = '@'
+	ents[npc_e].color = gfx.GREEN
+	ents[npc_e].pos = {10, 10}
 }
 
 update :: proc(dt: f32) {
 	state := get_state()
-	if state.player_pending_dir_delay > 0 {
-		state.player_pending_dir_delay -= dt
-		if state.player_pending_dir_delay <= 0 {
-			do_player_movement()
-		}
-	}
 
 	// animations & physics
 	update_timer += dt
@@ -73,11 +74,11 @@ update :: proc(dt: f32) {
 	update_timer -= DT
 
 	ents := get_ents()
-	runed := ent_iterator({.Runed})
-	for e in each_ent(&runed) {
+	spacial := ent_iterator({.Spacial})
+	for e in each_ent(&spacial) {
 		if (ents[e].pos_offset == {}) do continue
 		dist := linalg.length(ents[e].pos_offset)
-		step := min(dist, STEP_SPEED)
+		step := min(dist, OFFSET_SPEED)
 		dir := -ents[e].pos_offset / dist
 		ents[e].pos_offset += step * dir
 	}
@@ -87,26 +88,27 @@ draw :: proc() {
 	state := get_state()
 	ents := get_ents()
 
+	gfx.set_color(gfx.BLACK)
 	gfx.clear()
 	defer gfx.present()
 
 	gfx.set_view(VIRTUAL_W, VIRTUAL_H)
 
-	runed := ent_iterator({.Runed})
-	for e in each_ent(&runed) {
-		draw_rune(ents[e].char, auto_cast ents[e].pos.x +
-			ents[e].pos_offset.x, auto_cast ents[e].pos.y + ents[e].pos_offset.y)
+	spacial := ent_iterator({.Spacial})
+	for e in each_ent(&spacial) {
+		gfx.set_texture_color(state.tileset.texture, ents[e].color)
+		draw_rune(ents[e].char, V2{auto_cast ents[e].pos.x, auto_cast ents[e].pos.y} +
+			ents[e].pos_offset)
 	}
 }
 
-draw_rune :: proc(r: rune, x: f32, y: f32) {
-	// TODO add color
+draw_rune :: proc(r: rune, pos: V2) {
 	state := get_state()
 	tileset := &state.tileset
 	src := state.tileset.m[r]
 	dest := gfx.Rect{
-		auto_cast (x * TILE_SIZE),
-		auto_cast (y * TILE_SIZE),
+		auto_cast (pos.x * TILE_SIZE),
+		auto_cast (pos.y * TILE_SIZE),
 		auto_cast TILE_SIZE,
 		auto_cast TILE_SIZE,
 	}
@@ -140,39 +142,24 @@ load_tileset :: proc(data: []byte, size: int) -> Tileset {
 input :: proc(e: sdl.Event) {
 	switch {
 	case e.type == .KEYDOWN && e.key.keysym.scancode == .S:
-		queue_player_dir({0, 1})
+		move_player({0, 1})
 	case e.type == .KEYDOWN && e.key.keysym.scancode == .W:
-		queue_player_dir({0, -1})
+		move_player({0, -1})
 	case e.type == .KEYDOWN && e.key.keysym.scancode == .A:
-		queue_player_dir({-1, 0})
+		move_player({-1, 0})
 	case e.type == .KEYDOWN && e.key.keysym.scancode == .D:
-		queue_player_dir({1, 0})
-	case (e.type == .KEYUP && e.key.keysym.scancode == .S) | (e.type == .KEYUP && e.key.keysym.scancode == .W) | (e.type == .KEYUP && e.key.keysym.scancode == .A) | (e.type == .KEYUP && e.key.keysym.scancode == .D):
-	// do_player_movement()
+		move_player({1, 0})
 	}
 }
 
-// we debounce player movement to help with diagonal moves
-// this way, we allow for the small delta in time between the player pressing each direction key
-queue_player_dir :: proc(dir: Tile_Pos) {
+move_player :: proc(dir: V2) {
 	state := get_state()
-	state.player_pending_dir += dir
-	if state.player_pending_dir_delay == 0 {
-		state.player_pending_dir_delay = PLAYER_DIR_DELAY
-	} else {
-		do_player_movement()
-	}
+	move_entity(state.player_e, dir)
 }
 
-do_player_movement :: proc() {
-	state := get_state()
-	move_entity(state.player_e, state.player_pending_dir)
-	state.player_pending_dir = {}
-	state.player_pending_dir_delay = 0
-}
-
-move_entity :: proc(e: Ent, dir: Tile_Pos) {
+move_entity :: proc(e: Ent, dir: V2) {
 	ents := get_ents()
-	ents[e].pos += dir
-	ents[e].pos_offset -= V2{auto_cast dir.x, auto_cast dir.y}
+	ents[e].pos += {auto_cast dir.x, auto_cast dir.y}
+	ents[e].pos_offset = -dir
+	ents[e].pos_offset += {0, -STEP_HEIGHT}
 }

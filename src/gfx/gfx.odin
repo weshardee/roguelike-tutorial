@@ -25,6 +25,11 @@ Circle :: struct {
 
 renderer: ^sdl.Renderer
 
+BLACK :: ColorRGB{0, 0, 0}
+WHITE :: ColorRGB{255, 255, 255}
+RED :: ColorRGB{255, 0, 0}
+GREEN :: ColorRGB{0, 255, 0}
+
 // ------------------------------------------------------------------------
 // utils 
 
@@ -74,6 +79,10 @@ set_color_rgba :: proc(color: ColorRGBA) {
 set_color :: proc {
 	set_color_rgb,
 	set_color_rgba,
+}
+
+set_texture_color :: proc(texture: Texture, color: ColorRGB) {
+	sdl.SetTextureColorMod(texture, color.r, color.g, color.b)
 }
 
 // ------------------------------------------------------------------------

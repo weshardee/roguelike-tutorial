@@ -1,6 +1,7 @@
 package roguelike
 
 import "core:fmt"
+import "core:math/rand"
 import "core:math/linalg"
 import sdl "vendor:sdl2"
 
@@ -182,12 +183,41 @@ input :: proc(e: sdl.Event) {
 
 move_player :: proc(dir: V2) {
 	state := get_state()
-	move_entity(state.player_e, dir)
+	did_move := move_entity(state.player_e, dir)
+	if did_move {
+		for e in 0 ..< MAX_ENTS {
+			if e == state.player_e do continue
+			move_entity(e, rand_dir())
+		}
+	}
 }
 
-move_entity :: proc(e: Ent, dir: V2) {
+move_entity :: proc(e: Ent, dir: V2) -> bool {
+	state := get_state()
 	ents := get_ents()
-	ents[e].pos += {auto_cast dir.x, auto_cast dir.y}
-	ents[e].pos_offset = -dir
-	ents[e].pos_offset += {0, -STEP_HEIGHT}
+	next_pos := ents[e].pos + {auto_cast dir.x, auto_cast dir.y}
+	if next_pos.x >= 0 && next_pos.y >= 0 && next_pos.x < TILES_X && next_pos.y < TILES_Y &&
+	   state.tilemap[next_pos.x][next_pos.y].open {
+		ents[e].pos = next_pos
+		ents[e].pos_offset = -dir
+		ents[e].pos_offset += {0, -STEP_HEIGHT}
+		return true
+	}
+	return false
+}
+
+rand_dir :: proc() -> V2 {
+	dir := rand.int_max(3)
+	switch dir {
+	case 0:
+		return {1, 0}
+	case 1:
+		return {-1, 0}
+	case 2:
+		return {0, 1}
+	case 3:
+		return {0, -1}
+	case:
+		unreachable()
+	}
 }

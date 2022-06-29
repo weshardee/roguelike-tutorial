@@ -18,11 +18,12 @@ TILE_SIZE :: 5
 TILES_X :: 48
 TILES_Y :: 27
 TILEMAP :: #load("dejavu10x10_gs_tc.png")
+FLOOR_DOT_COLOR :: ColorRGB{40, 40, 40}
 
 PLAYER_DIR_DELAY :: 0.1
 DT :: 1.0 / 60
-OFFSET_SPEED :: 10 * DT
-STEP_HEIGHT :: 0.3
+OFFSET_SPEED :: 30 * DT
+STEP_HEIGHT :: 0.1
 
 V2 :: [2]f32
 Tile_Pos :: [2]int
@@ -32,6 +33,7 @@ State :: struct {
 	tileset:  Tileset,
 	player_e: Ent,
 	ecs:      Ecs,
+	tilemap:  Tilemap,
 }
 
 Tileset :: struct {
@@ -39,6 +41,12 @@ Tileset :: struct {
 	texture:  gfx.Texture,
 	m:        map[rune]gfx.Rect,
 }
+
+Tile :: struct {
+	open: bool,
+}
+
+Tilemap :: [TILES_X][TILES_Y]Tile
 
 update_timer: f32
 
@@ -58,11 +66,18 @@ load :: proc() {
 	state.player_e = push_ent({.Player, .Spacial})
 	ents[state.player_e].char = '@'
 	ents[state.player_e].color = gfx.WHITE
+	ents[state.player_e].pos = {1, 1}
 
 	npc_e := push_ent({.Spacial})
 	ents[npc_e].char = '@'
 	ents[npc_e].color = gfx.GREEN
 	ents[npc_e].pos = {10, 10}
+
+	for x in 1 ..< TILES_X - 1 {
+		for y in 1 ..< TILES_Y - 1 {
+			state.tilemap[x][y].open = true
+		}
+	}
 }
 
 update :: proc(dt: f32) {
@@ -94,6 +109,19 @@ draw :: proc() {
 
 	gfx.set_view(VIRTUAL_W, VIRTUAL_H)
 
+	// draw floor dots
+	gfx.set_texture_color(state.tileset.texture, FLOOR_DOT_COLOR)
+	for x in 0 ..< TILES_X {
+		for y in 0 ..< TILES_Y {
+			pos := V2{auto_cast x, auto_cast y}
+			if state.tilemap[x][y].open {
+				draw_rune('.', pos)
+			} else {
+				draw_rune('#', pos)
+			}
+		}
+	}
+
 	spacial := ent_iterator({.Spacial})
 	for e in each_ent(&spacial) {
 		gfx.set_texture_color(state.tileset.texture, ents[e].color)
@@ -117,7 +145,7 @@ draw_rune :: proc(r: rune, pos: V2) {
 
 // right now, I'm using the image provided by the tutorial
 CHARMAP :: []string{
-	"!\"#$%&'()*+,-./0123456789:;<=>?",
+	" !\"#$%&'()*+,-./0123456789:;<=>?",
 	"@[\\]^_{|}~░▒▓",
 	"",
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ",

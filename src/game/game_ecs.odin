@@ -19,7 +19,7 @@ Ent_Tag_Set :: bit_set[Ent_Tags]
 Ent_Props :: struct {
 	tags:       Ent_Tag_Set,
 	pos:        Tile_Pos,
-	char:       rune,
+	char:       Rune,
 	color:      gfx.ColorRGB,
 	pos_offset: V2,
 	hp:         int,
@@ -46,8 +46,10 @@ get_ents :: proc() -> ^Ents {
 
 init_ecs :: proc() {
 	ents := get_ents()
-	for i in 0 ..< MAX_ENTS {
-		ents[i].next = Ent(i + 1)
+	for e in Ent(0) ..< MAX_ENTS {
+		ents[e] = {
+			next = e + 1,
+		}
 	}
 }
 

@@ -36,3 +36,18 @@ get_state :: proc($T: typeid) -> ^T {
 get_renderer :: proc() -> ^sdl.Renderer {
 	return get_ctx().sdl_renderer
 }
+
+toggle_fullscreen :: proc() {
+	ctx := get_ctx()
+
+	// FULLSCREEN_FLAG: sdl.WindowFlag : .FULLSCREEN
+	// win_flags: sdl.WindowFlags
+	// sdl.GetWindowFlags(ctx.sdl_window, &win_flags)
+	// full := FULLSCREEN_FLAG in win_flags
+	// sdl.SetWindowFullscreen(ctx.sdl_window, full ? {} : {FULLSCREEN_FLAG})
+
+	FULLSCREEN_FLAGS :: sdl.WINDOW_FULLSCREEN_DESKTOP
+	win_flags := sdl.GetWindowFlags(ctx.sdl_window)
+	full := u32(FULLSCREEN_FLAGS) & win_flags != 0
+	sdl.SetWindowFullscreen(ctx.sdl_window, full ? {} : FULLSCREEN_FLAGS)
+}

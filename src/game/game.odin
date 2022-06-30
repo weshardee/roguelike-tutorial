@@ -250,6 +250,8 @@ input :: proc(e: sdl.Event) {
 		move_player({1, 0})
 	case keydown(e, .R):
 		reset()
+	case keydown(e, .F):
+		app.toggle_fullscreen()
 	}
 }
 

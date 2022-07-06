@@ -1,9 +1,7 @@
-package roguelike
+package rl
 
 import "core:fmt"
-import sdl "vendor:sdl2"
-
-import "../gfx"
+import "vendor:raylib"
 
 MAX_ENTS :: Ent(1024)
 
@@ -20,7 +18,7 @@ Ent_Props :: struct {
 	tags:       Ent_Tag_Set,
 	pos:        Tile_Pos,
 	char:       Rune,
-	color:      gfx.ColorRGB,
+	color:      Color,
 	pos_offset: V2,
 	hp:         int,
 	// for the linked list of available ents
@@ -35,17 +33,15 @@ Ecs :: struct {
 }
 
 get_ecs :: proc() -> ^Ecs {
-	state := get_state()
 	return &state.ecs
 }
 
 get_ents :: proc() -> ^Ents {
-	ecs := get_ecs()
-	return &ecs.ents
+	return &state.ecs.ents
 }
 
 init_ecs :: proc() {
-	ents := get_ents()
+	using state.ecs
 	for e in Ent(0) ..< MAX_ENTS {
 		ents[e] = {
 			next = e + 1,
@@ -54,12 +50,12 @@ init_ecs :: proc() {
 }
 
 push_ent :: proc(tags: Ent_Tag_Set) -> Ent {
-	ecs := get_ecs()
-	e := ecs.next
-	ecs.next = ecs.ents[e].next
+	using state.ecs
+	e := next
+	next = ents[e].next
 
 	assert(tags != {})
-	ecs.ents[e].tags = tags
+	ents[e].tags = tags
 
 	return e
 }

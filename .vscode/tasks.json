@@ -7,7 +7,7 @@
       "label": "build",
       "group": {
         "kind": "build",
-        "isDefault": true
+        "isDefault": true,
       },
       "command": "./build.sh",
       "presentation": {
@@ -27,6 +27,86 @@
           "message": 4
         }
       }
-    }
+    },
+    {
+      "isBackground": true,
+      "label": "watch",
+      "group": {
+        "kind": "build",
+        "isDefault": false,
+      },
+      "command": "./scripts/watch.sh",
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "always",
+        "revealProblems": "always",
+        "clear": true
+      },
+      "problemMatcher": {
+        "background": {
+          // "activeOnStart": true,
+          "beginsPattern": {
+            // "file": 0
+            "regexp": "change"
+          },
+          "endsPattern": {
+            // "file": 0
+            "regexp": "done",
+          },
+        },
+        "owner": "odin",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^(.*)\\((\\d+):(\\d+)\\) (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        }
+      }
+    },
+    {
+      "label": "build game library",
+      "group": {
+        "kind": "build",
+        "isDefault": false,
+      },
+      "command": "./scripts/build_game.sh",
+      // "isBackground": true,
+      // "runOptions": {
+      //   "runOn"
+      // },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "revealProblems": "never",
+        "clear": true
+      },
+      "problemMatcher": {
+        "background": {
+          // "activeOnStart": true,
+          "beginsPattern": {
+            // "file": 0
+            "regexp": "^-- start"
+          },
+          "endsPattern": {
+            // "file": 0
+            "regexp": "^-- done"
+          },
+        },
+        "owner": "odin",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^(.*)\\((\\d+):(\\d+)\\) (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        }
+      }
+    },
   ]
 }

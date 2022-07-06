@@ -1,4 +1,4 @@
-package roguelike
+package rl
 
 import "core:fmt"
 import "core:math"
@@ -17,15 +17,14 @@ room_cards := []Room_Card{
 	{7, 7, `
 #######
 #.....#
-#.....#
-#.....#
-#.....#
+#.#.#.#
+...####
+#...#.#
 #.....#
 #######`},
 }
 
 reset_dungeon :: proc() {
-	state := get_state()
 	state.tiles = {}
 
 	x, y: int

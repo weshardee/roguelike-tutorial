@@ -28,104 +28,93 @@ draw :: proc() {
 	BeginDrawing()
 	ClearBackground(BLACK)
 	defer EndDrawing()
-
-	BeginMode2D({offset = {}, zoom = 1})
+	
+	BeginMode2D({offset = {}, zoom = VIRTUAL_PX})
 	DrawTextureV(state.walls, {0, 0}, {255, 255, 255, 255})
 	defer EndMode2D()
 
-	// gfx.set_view(VIRTUAL_W, VIRTUAL_H)
 	// draw floor dots
-	// DrawTextureV(state.tilesheet.texture, {1, 1}, {})
-	// ts := &state.tilesheet
-	// gfx.set_draw_blend_mode(.BLEND)
-	// gfx.set_color(wall_color)
 	for tile_x in 0 ..< TILES_X {
 		for tile_y in 0 ..< TILES_Y {
-			// DrawRectangleV({
-			// 		auto_cast tile_x * TILE_SIZE,
-			// 		auto_cast tile_y * TILE_SIZE,
-			// 	}, {TILE_SIZE - 1, TILE_SIZE - 1}, BLACK)
-			// 		pos := V2{auto_cast tile_x, auto_cast tile_y}
-			// 		if is_open({tile_x, tile_y}) {
-			// 			x := tile_x * TILE_SIZE + TILE_SIZE * 0.5 - 1
-			// 			y := tile_y * TILE_SIZE + TILE_SIZE * 0.5 - 1
-			// 			w := 2
-			// 			h := 2
-			// 			gfx.set_color(floor_color)
-			// 			gfx.fill_rect({auto_cast x, auto_cast y, auto_cast w, auto_cast h})
-			// 		} else {
-			// 			is_open_w := is_open({tile_x - 1, tile_y})
-			// 			is_open_e := is_open({tile_x + 1, tile_y})
-			// 			is_open_n := is_open({tile_x, tile_y - 1})
-			// 			is_open_s := is_open({tile_x, tile_y + 1})
-			// 			is_open_nw := is_open({tile_x - 1, tile_y - 1})
-			// 			is_open_ne := is_open({tile_x + 1, tile_y - 1})
-			// 			is_open_sw := is_open({tile_x - 1, tile_y + 1})
-			// 			is_open_se := is_open({tile_x + 1, tile_y + 1})
+			if is_open({tile_x, tile_y}) {
+				x := tile_x * TILE_SIZE + TILE_SIZE * 0.5 - 1
+				y := tile_y * TILE_SIZE + TILE_SIZE * 0.5 - 1
+				w := 2
+				h := 2
+				// DrawRectangle(x, y, w, h, FLOOR_DOT_COLOR)
+			} else {
+				// 			is_open_w := is_open({tile_x - 1, tile_y})
+				// 			is_open_e := is_open({tile_x + 1, tile_y})
+				// 			is_open_n := is_open({tile_x, tile_y - 1})
+				// 			is_open_s := is_open({tile_x, tile_y + 1})
+				// 			is_open_nw := is_open({tile_x - 1, tile_y - 1})
+				// 			is_open_ne := is_open({tile_x + 1, tile_y - 1})
+				// 			is_open_sw := is_open({tile_x - 1, tile_y + 1})
+				// 			is_open_se := is_open({tile_x + 1, tile_y + 1})
 
-			// 			x0 := tile_x * TILE_SIZE
-			// 			y0 := tile_y * TILE_SIZE
-			// 			x1 := x0 + TILE_SIZE_HALF
-			// 			y1 := y0 + TILE_SIZE_HALF
-			// 			x2 := x1 + TILE_SIZE_HALF
-			// 			y2 := x2 + TILE_SIZE_HALF
+				// 			x0 := tile_x * TILE_SIZE
+				// 			y0 := tile_y * TILE_SIZE
+				// 			x1 := x0 + TILE_SIZE_HALF
+				// 			y1 := y0 + TILE_SIZE_HALF
+				// 			x2 := x1 + TILE_SIZE_HALF
+				// 			y2 := x2 + TILE_SIZE_HALF
 
-			// 			w: i32 = TILE_SIZE_HALF
-			// 			h: i32 = TILE_SIZE_HALF
+				// 			w: i32 = TILE_SIZE_HALF
+				// 			h: i32 = TILE_SIZE_HALF
 
-			// 			gfx.set_color(gfx.rgba(1, 1, 1, 0.07))
-			// 			gfx.fill_rect({auto_cast x0, auto_cast y0, TILE_SIZE, TILE_SIZE})
-			// 			gfx.set_color(wall_color)
+				// 			gfx.set_color(gfx.rgba(1, 1, 1, 0.07))
+				// 			gfx.fill_rect({auto_cast x0, auto_cast y0, TILE_SIZE, TILE_SIZE})
+				// 			gfx.set_color(wall_color)
 
-			// 			if is_open_w || is_open_n || is_open_nw {
-			// 				switch {
-			// 				case is_open_w && is_open_n:
-			// 					draw_tile_nw(x0, y0)
-			// 				case is_open_w:
-			// 					draw_tile_w(x0, y0)
-			// 				case is_open_n:
-			// 					draw_tile_n(x0, y0)
-			// 				case is_open_nw:
-			// 					draw_tile_junction_nw(x0, y0)
-			// 				}
-			// 			}
-			// 			if is_open_e || is_open_s || is_open_se {
-			// 				switch {
-			// 				case is_open_e && is_open_s:
-			// 					draw_tile_se(x1, y1)
-			// 				case is_open_s:
-			// 					draw_tile_s(x1, y1)
-			// 				case is_open_e:
-			// 					draw_tile_e(x1, y1)
-			// 				case is_open_se:
-			// 					draw_tile_junction_se(x1, y1)
-			// 				}
-			// 			}
-			// 			if is_open_w || is_open_s || is_open_sw {
-			// 				switch {
-			// 				case is_open_w && is_open_s:
-			// 					draw_tile_sw(x0, y1)
-			// 				case is_open_w:
-			// 					draw_tile_w(x0, y1)
-			// 				case is_open_s:
-			// 					draw_tile_s(x0, y1)
-			// 				case:
-			// 					draw_tile_junction_sw(x0, y1)
-			// 				}
-			// 			}
-			// 			if is_open_e || is_open_n || is_open_ne {
-			// 				switch {
-			// 				case is_open_n && is_open_e:
-			// 					draw_tile_ne(x1, y0)
-			// 				case is_open_n:
-			// 					draw_tile_n(x1, y0)
-			// 				case is_open_e:
-			// 					draw_tile_e(x1, y0)
-			// 				case:
-			// 					draw_tile_junction_ne(x1, y0)
-			// 				}
-			// 			}
-			// 		}
+				// 			if is_open_w || is_open_n || is_open_nw {
+				// 				switch {
+				// 				case is_open_w && is_open_n:
+				// 					draw_tile_nw(x0, y0)
+				// 				case is_open_w:
+				// 					draw_tile_w(x0, y0)
+				// 				case is_open_n:
+				// 					draw_tile_n(x0, y0)
+				// 				case is_open_nw:
+				// 					draw_tile_junction_nw(x0, y0)
+				// 				}
+				// 			}
+				// 			if is_open_e || is_open_s || is_open_se {
+				// 				switch {
+				// 				case is_open_e && is_open_s:
+				// 					draw_tile_se(x1, y1)
+				// 				case is_open_s:
+				// 					draw_tile_s(x1, y1)
+				// 				case is_open_e:
+				// 					draw_tile_e(x1, y1)
+				// 				case is_open_se:
+				// 					draw_tile_junction_se(x1, y1)
+				// 				}
+				// 			}
+				// 			if is_open_w || is_open_s || is_open_sw {
+				// 				switch {
+				// 				case is_open_w && is_open_s:
+				// 					draw_tile_sw(x0, y1)
+				// 				case is_open_w:
+				// 					draw_tile_w(x0, y1)
+				// 				case is_open_s:
+				// 					draw_tile_s(x0, y1)
+				// 				case:
+				// 					draw_tile_junction_sw(x0, y1)
+				// 				}
+				// 			}
+				// 			if is_open_e || is_open_n || is_open_ne {
+				// 				switch {
+				// 				case is_open_n && is_open_e:
+				// 					draw_tile_ne(x1, y0)
+				// 				case is_open_n:
+				// 					draw_tile_n(x1, y0)
+				// 				case is_open_e:
+				// 					draw_tile_e(x1, y0)
+				// 				case:
+				// 					draw_tile_junction_ne(x1, y0)
+				// 				}
+				// 			}
+			}
 		}
 	}
 

@@ -29,11 +29,14 @@ get_state :: proc($T: typeid) -> ^T {
 	ctx := get_ctx()
 	size := size_of(T)
 	if size > ctx.state_size {
-		// TODO for hot reloading, we'll want to increase the allocated memory size if needed
-		assert(ctx.state_size == 0)
+		new_mem := mem.alloc(size)
+
+		if ctx.state_size != 0 {
+			mem.free(ctx.state_data)
+		}
 
 		// init game memory
-		ctx.state_data = mem.alloc(size)
+		ctx.state_data = new_mem
 		ctx.state_size = size
 	}
 	return auto_cast ctx.state_data

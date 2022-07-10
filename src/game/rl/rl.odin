@@ -1,6 +1,7 @@
 package rl
 
 import "core:fmt"
+import "core:math"
 import "core:math/rand"
 import "core:math/linalg"
 import "vendor:raylib"
@@ -12,18 +13,22 @@ APP_TITLE :: "Roguelike"
 APP_WIDTH :: VIRTUAL_W * VIRTUAL_PX
 APP_HEIGHT :: VIRTUAL_H * VIRTUAL_PX
 
-VIRTUAL_W :: TILE_SIZE * TILES_X
-VIRTUAL_H :: TILE_SIZE * TILES_Y
-VIRTUAL_PX :: 4
-TILE_SIZE :: 8
-TILE_SIZE_HALF :: TILE_SIZE / 2
+VIRTUAL_W :: TILE_SIZE_X * TILES_X
+VIRTUAL_H :: TILE_SIZE_Y * TILES_Y
+VIRTUAL_PX :: 1
+TILE_SIZE_X :: 24
+TILE_SIZE_Y :: 24
+TILE_SIZE_X_HALF :: TILE_SIZE_X / 2
+TILE_SIZE_Y_HALF :: TILE_SIZE_Y / 2
+MID_TILE :: V2{TILE_SIZE_X_HALF, TILE_SIZE_Y_HALF}
 TILES_X :: 20
 TILES_Y :: 20
+TILE_PAD :: 6
+// FONT_SIZE :: (TILE_SIZE_Y - TILE_PAD * 2) * 2
+FONT_SIZE :: 24
+FONT_SIZE_HIRES :: FONT_SIZE * 2
 
-WALLS_BMP :: #load("walls.bmp")
 WALLS_PNG :: #load("walls.png")
-
-FLOOR_DOT_COLOR :: Color{90, 90, 90, 255}
 
 PLAYER_DIR_DELAY :: 0.1
 DT :: 1.0 / 60
@@ -34,44 +39,98 @@ Tile_Pos :: [2]int
 Color :: shared.Color
 Image :: shared.Image
 Texture2D :: shared.Texture2D
+Font :: shared.Font
 Rectangle :: shared.Rectangle
 Vector2 :: shared.Vector2
 V2 :: Vector2
 
+// FONT :: "src/game/rl/SpaceMono-Regular.ttf"
+// FONT :: "src/game/rl/Kenney Mini Square Mono.ttf"
+FONT :: "src/game/rl/square.ttf"
+
+MAX_VIEW_DISTANCE :: 2
+VIEW_GRID_CENTER :: MAX_VIEW_DISTANCE
+VIEW_GRID_ACROSS :: MAX_VIEW_DISTANCE * 2 + 1
+
+View_Info :: struct {
+	dist:    int,
+	tile:    Tile_Pos,
+	visited: bool,
+	visible: bool,
+}
+
 State :: struct {
-	loaded:    bool,
-	player_e:  Ent,
-	ecs:       Ecs,
-	tiles:     Tilemap,
-	test_rune: Rune,
-	walls:     Texture2D,
+	loaded:      bool,
+	player_e:    Ent,
+	ecs:         Ecs,
+	tiles:       Tilemap,
+	walls:       Texture2D,
+	font:        Font,
+	font_path:   string,
+	rune_offset: Vector2,
+	fov:         [VIEW_GRID_ACROSS][VIEW_GRID_ACROSS]View_Info,
 }
 
 Tile :: struct {
-	open: bool,
+	open:               bool,
+	visible:            bool,
+	seen:               bool,
+	dist_to_player:     int,
+	abs_dist_to_player: int,
+	dir_to_player:      Tile_Pos,
 }
 
 Tilemap :: [TILES_X][TILES_Y]Tile
 
+DIR_N :: Tile_Pos{0, -1}
+DIR_S :: Tile_Pos{0, 1}
+DIR_E :: Tile_Pos{1, 0}
+DIR_W :: Tile_Pos{-1, 0}
+DIR_NW :: Tile_Pos{-1, -1}
+DIR_NE :: Tile_Pos{1, -1}
+DIR_SW :: Tile_Pos{-1, 1}
+DIR_SE :: Tile_Pos{1, 1}
+
+directions: [8]Tile_Pos = {DIR_NW, DIR_N, DIR_NE, DIR_E, DIR_SE, DIR_S, DIR_SW, DIR_W}
+
+Visibility_Tree_Node :: struct {
+	pos:     Tile_Pos,
+	parents: [2]int,
+}
+
+Visibility_Tree :: struct {
+	nodes: [TILES_X * TILES_Y]Visibility_Tree_Node,
+}
+
 state: ^State
 api: ^shared.Platform_API
-reload := true
 update_timer: f32
 
 load :: proc() {
 	using api
 	if state.loaded {
 		UnloadTexture(state.walls)
+	} else {
+		state.loaded = true
+		state.walls = LoadTexture("src/game/rl/walls.png")
+		init_ecs()
+		reset()
 	}
-	state.loaded = true
-	state.walls = LoadTexture("src/game/rl/walls.png")
-	fmt.println("load walls", state.walls)
-	init_ecs()
-	reset()
 }
 
 update :: proc() {
 	using api
+
+	if state.font.baseSize != FONT_SIZE_HIRES || state.font_path != FONT {
+		if state.font.charsCount != 0 do UnloadFont(state.font)
+		state.font = LoadFontEx(FONT, FONT_SIZE_HIRES, {}, 250)
+		state.font_path = FONT
+	}
+	glyph_info := GetGlyphInfo(state.font, '@')
+	state.rune_offset = {
+		TILE_SIZE_X_HALF - f32(glyph_info.image.width + glyph_info.offsetX) / 4,
+		TILE_SIZE_Y_HALF - f32(glyph_info.offsetY + glyph_info.image.height) / 4,
+	}
 
 	check_input()
 
@@ -86,61 +145,70 @@ update :: proc() {
 }
 
 update_fixed :: proc() {
-	// ents := get_ents()
-	// spacial := ent_iterator({.Spacial})
-	// for e in each_ent(&spacial) {
-	// 	if (ents[e].pos_offset == {}) do continue
-	// 	dist := linalg.length(ents[e].pos_offset)
-	// 	step := min(dist, OFFSET_SPEED)
-	// 	dir := -ents[e].pos_offset / dist
-	// 	ents[e].pos_offset += step * dir
-	// }
+	using api
+
+	// reset visibility
+	for tile_x in 0 ..< TILES_X {
+		for tile_y in 0 ..< TILES_Y {
+			state.tiles[tile_x][tile_y].visible = false
+		}
+	}
+
+	player_pos := state.ecs.ents[state.player_e].pos
+
+	// calc abs dist to player for all spaces -- direction gradient for monster movement
+	for x in 0 ..< TILES_X {
+		for y in 0 ..< TILES_Y {
+			state.tiles[x][y].dist_to_player = -1
+			state.tiles[x][y].abs_dist_to_player = max(abs(x - player_pos.x), abs(
+					y - player_pos.y,
+				))
+			state.tiles[x][y].dir_to_player = {x, y} - player_pos
+		}
+	}
+
+	state.tiles[player_pos.x][player_pos.y].visible = true
+
+	// minimally, see all adjacent tiles
+	for dir in directions {
+		pos := player_pos + dir
+		state.tiles[pos.x][pos.y].visible = true
+	}
+
+	calc_lighting_8dir()
 
 }
 
-Rune :: enum {
-	Empty,
-	Ground_1,
-	Ground_2,
-	Ground_3,
-	Ground_4,
-	Grass_1,
-	Grass_2,
-	Grass_3,
-	Road_A0,
-	Road_A1,
-	Road_A2,
-	Road_A3,
-	Road_A4,
-	Ehh0,
-	Ehh1,
-	Ehh2,
-	Wall,
-	Road_0,
-	Road_1,
-	Road_2,
-	Num0 = 868,
-	Num1,
-	Num2,
-	Num3,
-	Num4,
-	Num5,
-	Num6,
-	Num7,
-	Num8,
-	Num9,
-	Colon,
-	Period,
-	Percent,
-	Weird_Block,
-	Wall_BL,
-	Wall_BM,
-	Wall_BR,
-	Block0,
-	Block1,
-	Arch,
-	Door_Closed,
-	Block2,
+nearest_dirs :: proc(dx, dy: int) -> [2]Tile_Pos {
+	straight: Tile_Pos
+	switch {
+	case abs(dy) > abs(dx) && dy < 0:
+		straight = DIR_N
+	case abs(dy) > abs(dx) && dy > 0:
+		straight = DIR_S
+	case abs(dy) < abs(dx) && dx > 0:
+		straight = DIR_E
+	case abs(dy) < abs(dx) && dx < 0:
+		straight = DIR_W
+	}
+	diag: Tile_Pos
+	pos_x := dx > 0
+	pos_y := dy > 0
+	switch {
+	case dy < 0 && dx < 0:
+		diag = DIR_NW
+	case dy < 0 && dx > 0:
+		diag = DIR_NE
+	case dy > 0 && dx < 0:
+		diag = DIR_SW
+	case dy > 0 && dx > 0:
+		diag = DIR_SE
+	}
+	return {straight, diag}
+}
+
+spread_visibility :: proc(dst: Tile_Pos, src: Tile_Pos) {
+	state.tiles[dst.x][dst.y].visible |= state.tiles[src.x][src.y].visible && state.tiles[src.x][src.y].open
 }
 
 check_input :: proc() {
@@ -240,17 +308,17 @@ reset :: proc() {
 	ents := get_ents()
 	init_ecs()
 
-	state.test_rune = .Num9
-
 	reset_dungeon()
 
 	state.player_e = push_ent({.Player, .Spacial})
-	ents[state.player_e].char = .Num0
+	ents[state.player_e].char = '@'
 	ents[state.player_e].pos = get_random_open_pos()
+	ents[state.player_e].color = WHITE
 
 	npc_e := push_ent({.Spacial})
-	ents[npc_e].char = .Num1
+	ents[npc_e].char = 'N'
 	ents[npc_e].pos = get_random_open_pos()
+	ents[npc_e].color = WHITE
 }
 
 get_random_open_pos :: proc() -> Tile_Pos {
@@ -274,26 +342,6 @@ rand_between :: proc(a, b: int) -> int {
 	return a + rand.int_max(b - a)
 }
 
-// load_texture_from_mem :: proc(file_type: cstring, data: []u8) -> Texture2D {
-// 	image: Image
-// 	format: i32
-// 	image.data = stbi.load_from_memory(&data[0], i32(len(data)), &image.width, &image.height,
-// 		&format, 0)
-// 	image.mipmaps = 1
-
-// 	switch format {
-// 	case 1:
-// 		image.format = .UNCOMPRESSED_GRAYSCALE
-// 	case 2:
-// 		image.format = .UNCOMPRESSED_GRAY_ALPHA
-// 	case 3:
-// 		image.format = .UNCOMPRESSED_R8G8B8
-// 	case 4:
-// 		image.format = .UNCOMPRESSED_R8G8B8A8
-// 	}
-
-// 	// img := LoadImageFromMemory(file_type, &data[0], auto_cast len(data))
-// 	fmt.println(image)
-// 	texture := api.LoadTextureFromImage(image)
-// 	return texture
-// }
+get_player_pos :: proc() -> Tile_Pos {
+	return state.ecs.ents[state.player_e].pos
+}

@@ -27,17 +27,27 @@ room_cards := []Room_Card{
 reset_dungeon :: proc() {
 	state.tiles = {}
 
-	x, y: int
-	for {
-		room := room_cards[0]
-		add_room(x, y, room)
-		x += room.w - 1
-		if (x > 10) {
-			y += room.h - 1
-			x = 0
+	for x in 2 ..< (TILES_X - 2) {
+		for y in 2 ..< (TILES_Y - 2) {
+			state.tiles[x][y].open = true
 		}
-		if (y > 10) do return
 	}
+	for x in (TILES_X / 2 - 2) ..< (TILES_X / 2 + 2) {
+		for y in (TILES_Y / 2 - 2) ..< (TILES_Y / 2 + 2) {
+			state.tiles[x][y].open = false
+		}
+	}
+	// x, y: int
+	// for {
+	// 	room := room_cards[0]
+	// 	add_room(x, y, room)
+	// 	x += room.w - 1
+	// 	if (x > 10) {
+	// 		y += room.h - 1
+	// 		x = 0
+	// 	}
+	// 	if (y > 10) do return
+	// }
 }
 
 add_room :: proc(_x, _y: int, card: Room_Card) {

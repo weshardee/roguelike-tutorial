@@ -17,5 +17,5 @@
 #   exec ./$MAIN_OUT
 # fi
 
-rm -rf bin
+# rm -rf bin
 ./scripts/build_host.sh

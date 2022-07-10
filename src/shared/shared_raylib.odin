@@ -460,7 +460,7 @@ Platform_API :: struct {
 	// Font loading/unloading functions
 	GetFontDefault: proc() -> Font,
 	LoadFont: proc(fileName: string) -> Font,
-	LoadFontEx: proc(fileName: string, fontSize: int, fontChars: []rune) -> Font,
+	LoadFontEx: proc(fileName: string, fontSize: int, fontChars: []rune, glyphCount: int) -> Font,
 	LoadFontFromImage: proc(image: Image, key: Color, firstChar: rune) -> Font,
 	LoadFontFromMemory: proc(fileType: string, fileData: []u8, fontSize: int, fontChars: []rune) -> Font,
 	LoadFontData: proc(fileData: []u8, fontSize: int, fontChars: []rune, _type: FontType) -> ^GlyphInfo,
@@ -473,7 +473,7 @@ Platform_API :: struct {
 	DrawText: proc(text: string, posX: int, posY: int, fontSize: int, color: Color),
 	DrawTextEx: proc(font: Font, text: string, position: Vector2, fontSize: f32, spacing: f32, tint: Color),
 	DrawTextPro: proc(font: Font, text: string, position: Vector2, origin: Vector2, rotation: f32, fontSize: f32, spacing: f32, tint: Color),
-	DrawTextCodepoint: proc(font: Font, codepoint: rune, position: Vector2, fontSize: f32, tint: Color),
+	DrawTextCodepoint: proc(font: Font, fontSize: f32, codepoint: rune, position: Vector2, tint: Color),
 
 	// Text misc. functions
 	MeasureText: proc(text: string, fontSize: int) -> int,

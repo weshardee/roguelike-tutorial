@@ -17,7 +17,7 @@ Ent_Tag_Set :: bit_set[Ent_Tags]
 Ent_Props :: struct {
 	tags:       Ent_Tag_Set,
 	pos:        Tile_Pos,
-	char:       Rune,
+	char:       rune,
 	color:      Color,
 	pos_offset: V2,
 	hp:         int,

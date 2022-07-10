@@ -1131,9 +1131,9 @@ raylib.EndTextureMode()
 		fileName := strings.clone_to_cstring(fileName, context.temp_allocator)
 		return raylib.LoadFont(fileName)  ;
 	}
-	api.LoadFontEx = proc(fileName: string, fontSize: int, fontChars: []rune) -> Font {
+	api.LoadFontEx = proc(fileName: string, fontSize: int, fontChars: []rune, glyphCount: int) -> Font {
 		fileName := strings.clone_to_cstring(fileName, context.temp_allocator)
-		return raylib.LoadFontEx(fileName, i32(fontSize), &fontChars[0], i32(len(fontChars)))
+		return raylib.LoadFontEx(fileName, i32(fontSize), nil, i32(glyphCount))
 	}
 	api.LoadFontFromImage = proc(image: Image, key: Color, firstChar: rune) -> Font {
 		return raylib.LoadFontFromImage(image, key, firstChar)  ;
@@ -1171,8 +1171,8 @@ raylib.EndTextureMode()
 		text := strings.clone_to_cstring(text, context.temp_allocator)
 		raylib.DrawTextPro(font, text, position, origin, rotation, fontSize, spacing, tint);
 	}
-	api.DrawTextCodepoint = proc(font: Font, codepoint: rune, position: Vector2, fontSize: f32, tint: Color) {
-		raylib.DrawTextCodepoint(font, codepoint, position, fontSize, tint);
+	api.DrawTextCodepoint = proc(font: Font, fontSize: f32, codepoint: rune, position: Vector2, tint: Color) {
+		raylib.DrawTextCodepoint(font, codepoint, position, fontSize, tint)
 	}
 
 	// Text misc. functions

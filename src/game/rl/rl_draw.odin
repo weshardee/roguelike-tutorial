@@ -2,12 +2,29 @@ package rl
 
 import "../../shared"
 import "core:math"
+import "core:math/linalg"
 import "core:fmt"
 
-WHITE :: Color{255, 255, 255, 255}
+BG :: Color{46, 52, 64, 255}
+WHITE :: Color{216, 222, 234, 255}
 BLACK :: Color{0, 0, 0, 255}
-WALL_COLOR :: Color{180, 180, 255, 255}
-FLOOR_COLOR := Color{180, 180, 255, 50}
+BLUE :: Color{129, 161, 193, 255}
+MAUVE :: Color{180, 142, 173, 255}
+YELLOW :: Color{235, 203, 139, 255}
+BRIGHT_BLUE :: Color{136, 192, 208, 255}
+RED :: Color{191, 97, 106, 255}
+GRAY :: Color{59, 66, 82, 255}
+BROWN :: Color{209, 135, 112, 255}
+GREEN :: Color{163, 190, 140, 255}
+
+WALL_COLOR :: GRAY
+WALL_COLOR_VISIBLE :: WHITE
+FLOOR_DOT_COLOR :: Color{226, 233, 255, 40}
+
+DOT_SIZE :: TILE_SIZE_Y * 0.25
+DOT_SIZE_V2 :: V2{DOT_SIZE, DOT_SIZE}
+DOT_OFFSET :: V2{TILE_SIZE_X_HALF - DOT_SIZE / 2, TILE_SIZE_Y_HALF - DOT_SIZE / 2}
+
 
 Wall_Open_Dir :: enum {
 	N,
@@ -25,168 +42,70 @@ Wall_Open_Dirs :: bit_set[Wall_Open_Dir]
 draw :: proc() {
 	using api
 	using state.ecs
+
 	BeginDrawing()
-	ClearBackground(BLACK)
+	ClearBackground(BG)
 	defer EndDrawing()
-	
+
 	BeginMode2D({offset = {}, zoom = VIRTUAL_PX})
-	DrawTextureV(state.walls, {0, 0}, {255, 255, 255, 255})
 	defer EndMode2D()
 
-	// draw floor dots
-	for tile_x in 0 ..< TILES_X {
-		for tile_y in 0 ..< TILES_Y {
-			if is_open({tile_x, tile_y}) {
-				x := tile_x * TILE_SIZE + TILE_SIZE * 0.5 - 1
-				y := tile_y * TILE_SIZE + TILE_SIZE * 0.5 - 1
-				w := 2
-				h := 2
-				// DrawRectangle(x, y, w, h, FLOOR_DOT_COLOR)
-			} else {
-				// 			is_open_w := is_open({tile_x - 1, tile_y})
-				// 			is_open_e := is_open({tile_x + 1, tile_y})
-				// 			is_open_n := is_open({tile_x, tile_y - 1})
-				// 			is_open_s := is_open({tile_x, tile_y + 1})
-				// 			is_open_nw := is_open({tile_x - 1, tile_y - 1})
-				// 			is_open_ne := is_open({tile_x + 1, tile_y - 1})
-				// 			is_open_sw := is_open({tile_x - 1, tile_y + 1})
-				// 			is_open_se := is_open({tile_x + 1, tile_y + 1})
+	player_pos := state.ecs.ents[state.player_e].pos
 
-				// 			x0 := tile_x * TILE_SIZE
-				// 			y0 := tile_y * TILE_SIZE
-				// 			x1 := x0 + TILE_SIZE_HALF
-				// 			y1 := y0 + TILE_SIZE_HALF
-				// 			x2 := x1 + TILE_SIZE_HALF
-				// 			y2 := x2 + TILE_SIZE_HALF
+	for x in 0 ..< TILES_X {
+		for y in 0 ..< TILES_Y {
+			visible := state.tiles[x][y].visible
+			pos := pos_v2({x, y})
+			color := visible ? GRAY : BG
 
-				// 			w: i32 = TILE_SIZE_HALF
-				// 			h: i32 = TILE_SIZE_HALF
+			DrawRectangleV(pos, {TILE_SIZE_X, TILE_SIZE_Y}, color)
 
-				// 			gfx.set_color(gfx.rgba(1, 1, 1, 0.07))
-				// 			gfx.fill_rect({auto_cast x0, auto_cast y0, TILE_SIZE, TILE_SIZE})
-				// 			gfx.set_color(wall_color)
-
-				// 			if is_open_w || is_open_n || is_open_nw {
-				// 				switch {
-				// 				case is_open_w && is_open_n:
-				// 					draw_tile_nw(x0, y0)
-				// 				case is_open_w:
-				// 					draw_tile_w(x0, y0)
-				// 				case is_open_n:
-				// 					draw_tile_n(x0, y0)
-				// 				case is_open_nw:
-				// 					draw_tile_junction_nw(x0, y0)
-				// 				}
-				// 			}
-				// 			if is_open_e || is_open_s || is_open_se {
-				// 				switch {
-				// 				case is_open_e && is_open_s:
-				// 					draw_tile_se(x1, y1)
-				// 				case is_open_s:
-				// 					draw_tile_s(x1, y1)
-				// 				case is_open_e:
-				// 					draw_tile_e(x1, y1)
-				// 				case is_open_se:
-				// 					draw_tile_junction_se(x1, y1)
-				// 				}
-				// 			}
-				// 			if is_open_w || is_open_s || is_open_sw {
-				// 				switch {
-				// 				case is_open_w && is_open_s:
-				// 					draw_tile_sw(x0, y1)
-				// 				case is_open_w:
-				// 					draw_tile_w(x0, y1)
-				// 				case is_open_s:
-				// 					draw_tile_s(x0, y1)
-				// 				case:
-				// 					draw_tile_junction_sw(x0, y1)
-				// 				}
-				// 			}
-				// 			if is_open_e || is_open_n || is_open_ne {
-				// 				switch {
-				// 				case is_open_n && is_open_e:
-				// 					draw_tile_ne(x1, y0)
-				// 				case is_open_n:
-				// 					draw_tile_n(x1, y0)
-				// 				case is_open_e:
-				// 					draw_tile_e(x1, y0)
-				// 				case:
-				// 					draw_tile_junction_ne(x1, y0)
-				// 				}
-				// 			}
+			d := player_pos - {x, y}
+			dirs := nearest_dirs(d.x, d.y)
+			for dir in dirs {
+				// end_pos := pos + pos_v2(dir) / 2
+				// DrawLineV(pos + MID_TILE, end_pos + MID_TILE, {255, 255, 255, 100})
 			}
 		}
 	}
 
-	// spacial := ent_iterator({.Spacial})
-	// for e in each_ent(&spacial) {
-	// 	draw_rune(ents[e].char, V2{auto_cast ents[e].pos.x, auto_cast ents[e].pos.y} +
-	// 		ents[e].pos_offset)
-	// }
-
-	// draw_rune(state.test_rune, {1, 1})
-	// draw_num(auto_cast state.test_rune, {2, 1})
-	// fmt.println("here", state.test_rune)
-}
-
-wall_tile :: proc(x, y, sheet_x, sheet_y: int) {
-	using api
-
-	source := Rectangle{
-		f32(sheet_x * TILE_SIZE_HALF),
-		f32(sheet_y * TILE_SIZE_HALF),
-		TILE_SIZE_HALF,
-		TILE_SIZE_HALF,
+	// draw floor dots
+	for tile_x in 0 ..< TILES_X {
+		for tile_y in 0 ..< TILES_Y {
+			tile_pos := Tile_Pos{tile_x, tile_y}
+			if is_open({tile_x, tile_y}) {
+				// draw_rune(FLOOR_DOT_COLOR, '.', tile_pos)
+				pos := pos_v2(tile_pos) + DOT_OFFSET
+				DrawRectangleV(pos, DOT_SIZE_V2, FLOOR_DOT_COLOR)
+			} else {
+				color := state.tiles[tile_x][tile_y].visible ? WALL_COLOR_VISIBLE : WALL_COLOR
+				draw_rune(color, '#', tile_pos)
+			}
+		}
 	}
-	pos := Vector2{f32(x), f32(y)}
-	DrawTextureRec(state.walls, source, pos, {})
-	// gfx.img(state.walls, src, dest)
+
+
+	spacial := ent_iterator({.Spacial})
+	for e in each_ent(&spacial) {
+		pos := ents[e].pos
+		if state.tiles[pos.x][pos.y].visible {
+			draw_rune(ents[e].color, ents[e].char, pos)
+		}
+	}
 }
 
-draw_tile_n :: proc(x, y: int) {
-	wall_tile(x, y, 1, 0)
+Drawable_Symbol :: enum {
+	Player,
+	Floor,
+	Wall,
 }
 
-draw_tile_ne :: proc(x, y: int) {
-	wall_tile(x, y, 2, 0)
+draw_rune :: proc(c: Color, r: rune, pos: Tile_Pos, offset: V2 = {}) {
+	pos := pos_v2(pos) + offset
+	pos += state.rune_offset
+	api.DrawTextCodepoint(state.font, FONT_SIZE, r, pos, c)
 }
 
-draw_tile_e :: proc(x, y: int) {
-	wall_tile(x, y, 2, 1)
-}
-
-draw_tile_se :: proc(x, y: int) {
-	wall_tile(x, y, 2, 2)
-}
-
-draw_tile_s :: proc(x, y: int) {
-	wall_tile(x, y, 1, 2)
-}
-
-draw_tile_sw :: proc(x, y: int) {
-	wall_tile(x, y, 0, 2)
-}
-
-draw_tile_w :: proc(x, y: int) {
-	wall_tile(x, y, 0, 1)
-}
-
-draw_tile_nw :: proc(x, y: int) {
-	wall_tile(x, y, 0, 0)
-}
-
-draw_tile_junction_ne :: proc(x, y: int) {
-	wall_tile(x, y, 4, 0)
-}
-
-draw_tile_junction_nw :: proc(x, y: int) {
-	wall_tile(x, y, 3, 0)
-}
-
-draw_tile_junction_sw :: proc(x, y: int) {
-	wall_tile(x, y, 3, 1)
-}
-
-draw_tile_junction_se :: proc(x, y: int) {
-	wall_tile(x, y, 4, 1)
+pos_v2 :: proc(tp: Tile_Pos) -> V2 {
+	return {f32(tp.x) * TILE_SIZE_X, f32(tp.y) * TILE_SIZE_Y}
 }

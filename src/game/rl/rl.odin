@@ -55,8 +55,8 @@ VIEW_GRID_ACROSS :: MAX_VIEW_DISTANCE * 2 + 1
 View_Info :: struct {
 	dist:    int,
 	tile:    Tile_Pos,
-	visited: bool,
 	visible: bool,
+	seen:    bool,
 }
 
 State :: struct {
@@ -175,8 +175,33 @@ update_fixed :: proc() {
 		state.tiles[pos.x][pos.y].visible = true
 	}
 
-	calc_lighting_8dir()
+	// calc_lighting_8dir()
+	update_lighting_shadowcast()
+}
 
+update_found_spaces :: proc() {
+	for x in 0 ..< TILES_X {
+		for y in 0 ..< TILES_Y {
+			state.tiles[x][y].seen |= state.tiles[x][y].visible
+		}
+	}
+}
+
+is_wall :: proc(pos: Tile_Pos) -> bool {
+	return !state.tiles[pos.x][pos.y].open
+}
+
+is_floor :: proc(pos: Tile_Pos) -> bool {
+	return state.tiles[pos.x][pos.y].open
+}
+
+is_visible :: proc(pos: Tile_Pos) -> bool {
+	return state.tiles[pos.x][pos.y].visible
+}
+
+reveal :: proc(pos: Tile_Pos) {
+	state.tiles[pos.x][pos.y].visible = true
+	state.tiles[pos.x][pos.y].seen = true
 }
 
 nearest_dirs :: proc(dx, dy: int) -> [2]Tile_Pos {
@@ -331,6 +356,10 @@ get_random_open_pos :: proc() -> Tile_Pos {
 
 is_open :: proc(pos: Tile_Pos) -> bool {
 	return in_bounds(pos) && state.tiles[pos.x][pos.y].open
+}
+
+is_seen :: proc(pos: Tile_Pos) -> bool {
+	return in_bounds(pos) && state.tiles[pos.x][pos.y].seen
 }
 
 get_random_pos :: proc() -> Tile_Pos {

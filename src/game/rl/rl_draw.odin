@@ -60,12 +60,16 @@ draw :: proc() {
 
 			DrawRectangleV(pos, {TILE_SIZE_X, TILE_SIZE_Y}, color)
 
-			d := player_pos - {x, y}
-			dirs := nearest_dirs(d.x, d.y)
-			for dir in dirs {
-				// end_pos := pos + pos_v2(dir) / 2
-				// DrawLineV(pos + MID_TILE, end_pos + MID_TILE, {255, 255, 255, 100})
-			}
+			// d := player_pos - {x, y}
+			// dirs := nearest_dirs(d.x, d.y)
+			// for dir in dirs {
+			// end_pos := pos + pos_v2(dir) / 2
+			// DrawLineV(pos + MID_TILE, end_pos + MID_TILE, {255, 255, 255, 100})
+			// }
+
+			// dir := step_dir({x, y}, player_pos)
+			// end_pos := pos + pos_v2(dir) / 2
+			// DrawLineV(pos + MID_TILE, end_pos + MID_TILE, {255, 255, 255, 100})
 		}
 	}
 
@@ -73,7 +77,8 @@ draw :: proc() {
 	for tile_x in 0 ..< TILES_X {
 		for tile_y in 0 ..< TILES_Y {
 			tile_pos := Tile_Pos{tile_x, tile_y}
-			if is_open({tile_x, tile_y}) {
+			if !is_seen(tile_pos) do continue
+			if is_open(tile_pos) {
 				// draw_rune(FLOOR_DOT_COLOR, '.', tile_pos)
 				pos := pos_v2(tile_pos) + DOT_OFFSET
 				DrawRectangleV(pos, DOT_SIZE_V2, FLOOR_DOT_COLOR)
@@ -108,4 +113,8 @@ draw_rune :: proc(c: Color, r: rune, pos: Tile_Pos, offset: V2 = {}) {
 
 pos_v2 :: proc(tp: Tile_Pos) -> V2 {
 	return {f32(tp.x) * TILE_SIZE_X, f32(tp.y) * TILE_SIZE_Y}
+}
+
+center :: proc(tp: Tile_Pos) -> V2 {
+	return pos_v2(tp) + {TILE_SIZE_X_HALF, TILE_SIZE_Y_HALF}
 }

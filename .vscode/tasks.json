@@ -16,17 +16,7 @@
         "revealProblems": "onProblem",
         "clear": true
       },
-      "problemMatcher": {
-        "owner": "odin",
-        "fileLocation": "absolute",
-        "pattern": {
-          "regexp": "^(.*)\\((\\d+):(\\d+)\\) (.*)$",
-          "file": 1,
-          "line": 2,
-          "column": 3,
-          "message": 4
-        }
-      }
+      "problemMatcher": "$gcc",    
     },
     {
       "isBackground": true,

@@ -1,0 +1,6 @@
+---
+BasedOnStyle: Google
+AllowShortCaseLabelsOnASingleLine: true
+IndentCaseLabels: false
+---
+

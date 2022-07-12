@@ -2,4 +2,7 @@
 
 rm -rf bin
 mkdir -p bin
-odin run src/host -debug -out:"bin/game"
+
+time cc -std=c++11 -o bin/game `pkg-config --libs --cflags raylib` src/host/host.cpp 
+# zig cc -o bin/game src/host/host.c
+./bin/game

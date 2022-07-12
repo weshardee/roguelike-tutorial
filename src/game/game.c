@@ -8,8 +8,8 @@
 
 void load(App_Context* ctx) {
   if (sizeof(State) > ctx->state.size) {
-    auto old = ctx->state;
-    ctx->state = {malloc(sizeof(State)), sizeof(State)};
+    Mem old = ctx->state;
+    ctx->state = (Mem){malloc(sizeof(State)), sizeof(State)};
     state = (State*)ctx->state.data;
     if (old.data != NULL) {
       unreachable;

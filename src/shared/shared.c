@@ -32,10 +32,10 @@ typedef char* cstring;
 
 #define unreachable (assert(false))
 
-int rand(int max) { return rand() % max; }
-int rand(int a, int b) {
+int rand_max(int max) { return rand() % max; }
+int rand_in_range(int a, int b) {
   assert(b > a);
-  return a + rand(b - a);
+  return a + rand_max(b - a);
 }
 float rand_float() { return (float)rand() / (float)RAND_MAX; }
 bool rand_bool() { return rand_float() < 0.5f; }
@@ -46,11 +46,11 @@ bool rand_bool() { return rand_float() < 0.5f; }
 //   for (int i = 0; i < va.length) printf_s()
 // }
 
-struct Mem {
+typedef struct {
   void* data;
   size_t size;
-};
+} Mem;
 
-struct App_Context {
+typedef struct {
   Mem state;
-};
+} App_Context;

@@ -24,7 +24,7 @@ struct Room_Card {
 void reset_dungeon() {
   for (int x = 0; x < TILES_X; x++) {
     for (int y = 0; y < TILES_Y; y++) {
-      state->tiles[x][y] = {};
+      state->tiles[x][y] = (Tile){0};
     }
   }
   for (int x = 2; x < (TILES_X - 2); x++) {

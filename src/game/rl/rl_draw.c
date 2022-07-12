@@ -41,12 +41,13 @@ enum Drawable_Symbol {
 };
 
 v2 pos_v2(Tile_Pos tp) {
-  return {(float)(tp.x) * TILE_SIZE_X, (float)(tp.y) * TILE_SIZE_Y};
+  return (v2){(float)(tp.x) * TILE_SIZE_X, (float)(tp.y) * TILE_SIZE_Y};
 }
 
-void draw_rune(Color tint, char c, Tile_Pos pos, v2 offset = v2()) {
-  v2 p = v2_add(pos_v2(pos), v2_add(offset, state->rune_offset));
-  DrawTextCodepoint(state->font, c, {p.x, p.y}, FONT_SIZE, tint);
+void draw_rune(Color tint, char c, Tile_Pos pos, v2 offset) {
+  v2 p = v2_add(pos_v2(pos), offset);
+  p = v2_add(p, state->rune_offset);
+  DrawTextCodepoint(state->font, c, (Vector2){p.x, p.y}, FONT_SIZE, tint);
 }
 
 v2 center(Tile_Pos tp) {
@@ -57,17 +58,17 @@ void draw() {
   BeginDrawing();
   ClearBackground(RL_BG);
 
-  BeginMode2D({.offset = {}, .zoom = VIRTUAL_PX});
+  BeginMode2D((Camera2D){.offset = {}, .zoom = VIRTUAL_PX});
 
-  auto player_pos = get_player_pos();
+  int2 player_pos = get_player_pos();
 
   for (int x = 0; x < TILES_X; x++) {
     for (int y = 0; y < TILES_Y; y++) {
-      auto visible = state->tiles[x][y].visible;
-      auto pos = pos_v2({x, y});
-      auto color = visible ? RL_GRAY : RL_BG;
-
-      DrawRectangleV({pos.x, pos.y}, {TILE_SIZE_X, TILE_SIZE_Y}, color);
+      bool visible = state->tiles[x][y].visible;
+      v2 pos = pos_v2((int2){x, y});
+      Color color = visible ? RL_GRAY : RL_BG;
+      DrawRectangleV((Vector2){pos.x, pos.y},
+                     (Vector2){TILE_SIZE_X, TILE_SIZE_Y}, color);
 
       // d := player_pos - {x, y}
       // dirs := nearest_dirs(d.x, d.y)
@@ -87,27 +88,27 @@ void draw() {
   // draw floor dots
   for (int tile_x = 0; tile_x < TILES_X; tile_x++) {
     for (int tile_y = 0; tile_y < TILES_Y; tile_y++) {
-      auto tile_pos = Tile_Pos{tile_x, tile_y};
+      int2 tile_pos = (Tile_Pos){tile_x, tile_y};
       if (!is_seen(tile_pos)) continue;
       if (is_open(tile_pos)) {
         // draw_rune(FLOOR_DOT_COLOR, '.', tile_pos)
-        auto pos = v2_add(pos_v2(tile_pos), DOT_OFFSET);
-        DrawRectangleV({pos.x, pos.y}, DOT_SIZE, FLOOR_DOT_COLOR);
+        v2 pos = v2_add(pos_v2(tile_pos), DOT_OFFSET);
+        DrawRectangleV((Vector2){pos.x, pos.y}, DOT_SIZE, FLOOR_DOT_COLOR);
       } else {
-        auto color = state->tiles[tile_x][tile_y].visible ? WALL_COLOR_VISIBLE
-                                                          : WALL_COLOR;
-        draw_rune(color, '#', tile_pos);
+        Color color = state->tiles[tile_x][tile_y].visible ? WALL_COLOR_VISIBLE
+                                                           : WALL_COLOR;
+        draw_rune(color, '#', tile_pos, (v2){0, 0});
       }
     }
   }
 
-  auto ecs = &state->ecs;
-  auto ents = &ecs->ents;
-  auto spacial = ent_iterator(ecs, {.spacial = true});
+  Ecs* ecs = &state->ecs;
+  Ents* ents = &ecs->ents;
+  Ent_Iterator spacial = ent_iterator(ecs, (Ent_Tags){.spacial = true});
   for (Ent e = each(&spacial); !spacial.done; e = each(&spacial)) {
-    auto pos = ents->pos[e];
+    int2 pos = ents->pos[e];
     if (state->tiles[pos.x][pos.y].visible) {
-      draw_rune(ents->color[e], ents->rune[e], pos);
+      draw_rune(ents->color[e], ents->rune[e], pos, (v2){0, 0});
     }
   }
   EndMode2D();

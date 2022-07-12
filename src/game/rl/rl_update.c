@@ -5,7 +5,7 @@
 #include "rl_shadowcast.c"
 
 void check_input() {
-  if (IsKeyPressed(KEY_S)) return move_player({0, 0});
+  if (IsKeyPressed(KEY_S)) return move_player((int2){0, 0});
   if (IsKeyPressed(KEY_C)) return move_player(DIR_SE);
   if (IsKeyPressed(KEY_Z)) return move_player(DIR_SW);
   if (IsKeyPressed(KEY_E)) return move_player(DIR_NE);
@@ -35,7 +35,7 @@ void update_fixed() {
       state->tiles[x][y].dist_to_player = -1;
       state->tiles[x][y].abs_dist_to_player =
           max(abs(x - player_pos.x), abs(y - player_pos.y));
-      state->tiles[x][y].dir_to_player = int2_sub((Tile_Pos){x, y}, player_pos);
+      state->tiles[x][y].dir_to_player = int2_add((int2){x, y}, player_pos);
     }
   }
 
@@ -57,11 +57,11 @@ void _update() {
 
   if (state->font.baseSize != FONT_SIZE_HIRES || state->font_path != FONT) {
     if (state->font.glyphCount != 0) UnloadFont(state->font);
-    state->font = LoadFontEx(FONT, FONT_SIZE_HIRES, {}, 250);
+    state->font = LoadFontEx(FONT, FONT_SIZE_HIRES, NULL, 250);
     state->font_path = FONT;
   }
-  auto glyph_info = GetGlyphInfo(state->font, '@');
-  state->rune_offset = v2_add(
+  GlyphInfo glyph_info = GetGlyphInfo(state->font, '@');
+  state->rune_offset = v2_sub(
       MID_TILE, (v2){
                     (float)(glyph_info.image.width + glyph_info.offsetX) / 4,
                     (float)(glyph_info.offsetY + glyph_info.image.height) / 4,

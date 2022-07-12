@@ -26,7 +26,7 @@
 #define OFFSET_SPEED (30 * DT)
 #define STEP_HEIGHT 0.1f
 
-static const auto FONT = "src/game/rl/square.ttf";
+static const char* FONT = "src/game/rl/square.ttf";
 
 #define MAX_VIEW_DISTANCE 2
 #define VIEW_GRID_CENTER MAX_VIEW_DISTANCE
@@ -41,14 +41,14 @@ typedef struct {
   bool seen;
 } View_Info;
 
-struct Tile {
+typedef struct {
   bool open;
   bool visible;
   bool seen;
   int dist_to_player;
   int abs_dist_to_player;
   Tile_Pos dir_to_player;
-};
+} Tile;
 
 #define Ent int
 
@@ -96,17 +96,17 @@ Ent push_ent(Ecs* ecs, Ent_Tags tags) {
 
 void free_ent(Ecs* ecs, Ent e) {
   assert(ecs->ents.tags[e].bits != 0);
-  ecs->ents.tags[e] = {};
+  ecs->ents.tags[e] = (Ent_Tags){0};
   ecs->ents.next[e] = ecs->next;
   ecs->next = e;
 }
 
-struct Ent_Iterator {
+typedef struct {
   Ecs* ecs;
   Ent_Tags tags;
   Ent e;
   bool done;
-};
+} Ent_Iterator;
 
 Ent_Iterator ent_iterator(Ecs* ecs, Ent_Tags tags) {
   return (Ent_Iterator){ecs, tags};
@@ -125,7 +125,7 @@ Ent each(Ent_Iterator* iter) {
   return -1;
 }
 
-struct State {
+typedef struct {
   bool loaded;
   Ent player_e;
   Ecs ecs;
@@ -135,7 +135,7 @@ struct State {
   const char* font_path;
   v2 rune_offset;
   View_Info fov[VIEW_GRID_ACROSS][VIEW_GRID_ACROSS];
-};
+} State;
 
 static State* state;
 static App_Context* ctx;
@@ -178,7 +178,7 @@ void reveal(Tile_Pos pos) {
 }
 
 Tile_Pos rand_dir() {
-  auto dir = rand() % 4;
+  int dir = rand() % 4;
   if (dir == 0) return DIR_NE;
   if (dir == 1) return DIR_E;
   if (dir == 2) return DIR_SE;
@@ -199,8 +199,8 @@ bool walkable(Tile_Pos pos) {
 }
 
 bool move_entity(Ent e, Tile_Pos dir) {
-  auto ents = &state->ecs.ents;
-  auto next_pos = int2_add(ents->pos[e], (Tile_Pos){dir.x, dir.y});
+  Ents* ents = &state->ecs.ents;
+  Tile_Pos next_pos = int2_add(ents->pos[e], (Tile_Pos){dir.x, dir.y});
   if (!walkable(next_pos)) {
     return false;
   }
@@ -210,7 +210,7 @@ bool move_entity(Ent e, Tile_Pos dir) {
 }
 
 void move_player(Tile_Pos dir) {
-  auto did_move = move_entity(state->player_e, dir);
+  bool did_move = move_entity(state->player_e, dir);
   if (did_move) {
     for (Ent e = 0; e < MAX_ENTS; e++) {
       if (e == state->player_e) continue;
@@ -225,11 +225,11 @@ void open_tile(Tile_Pos pos) {
 }
 
 void open_rect(int x0, int y0, int x1, int y1) {
-  assert(in_bounds({x0, y0}));
-  assert(in_bounds({x1, y1}));
+  assert(in_bounds((int2){x0, y0}));
+  assert(in_bounds((int2){x1, y1}));
   for (int x = x0; x <= x1; x++) {
     for (int y = y0; y <= y1; y++) {
-      open_tile({x, y});
+      open_tile((int2){x, y});
     }
   }
 }
@@ -238,10 +238,12 @@ bool is_open(Tile_Pos pos) {
   return in_bounds(pos) && state->tiles[pos.x][pos.y].open;
 }
 
-Tile_Pos get_random_pos() { return {rand_max(TILES_X), rand_max(TILES_Y)}; }
+Tile_Pos get_random_pos() {
+  return (Tile_Pos){rand_max(TILES_X), rand_max(TILES_Y)};
+}
 
 Tile_Pos get_random_open_pos() {
-  auto pos = get_random_pos();
+  int2 pos = get_random_pos();
   while (!is_open(pos)) {
     pos = get_random_pos();
   }

@@ -1,10 +1,10 @@
 // The initializer module. This launches the application, sets up the window and
 // rendering.
 
-#include "../shared/shared.cpp"
+#include "../shared/shared.c"
 #include "raylib.h"
 // #include "game_code"
-#include "../game/game.cpp"
+#include "../game/game.c"
 
 int main(void) {
   App_Context ctx = {};

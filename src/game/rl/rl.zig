@@ -236,7 +236,8 @@ fn draw() void {
             if (!is_seen(tile_pos)) continue;
             if (is_open(tile_pos)) {
                 var pos = pos_px(tile_pos) + DOT_OFFSET;
-                rl.DrawRectangleV(.{ .x = pos[0], .y = pos[1] }, DOT_SIZE, FLOOR_DOT_COLOR);
+                var color = if (is_visible(tile_pos)) FLOOR_DOT_COLOR else GRAY;
+                rl.DrawRectangleV(.{ .x = pos[0], .y = pos[1] }, DOT_SIZE, color);
             } else {
                 var color = if (state.tiles[tile_x][tile_y].visible) WALL_COLOR_VISIBLE else WALL_COLOR;
                 draw_rune(color, '#', tile_pos, .{ 0, 0 });

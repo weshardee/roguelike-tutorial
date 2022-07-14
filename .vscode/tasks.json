@@ -19,16 +19,12 @@
       "problemMatcher": "$gcc",    
     },
     {
-      "isBackground": true,
       "label": "watch",
       "group": {
         "kind": "build",
         "isDefault": false,
       },
       "command": "./scripts/watch.sh",
-      "runOptions": {
-        "runOn": "folderOpen"
-      },
       "presentation": {
         "echo": false,
         "reveal": "always",
@@ -36,26 +32,17 @@
         "clear": true
       },
       "problemMatcher": {
+        "base": "$gcc",
         "background": {
-          // "activeOnStart": true,
           "beginsPattern": {
-            // "file": 0
             "regexp": "change"
           },
           "endsPattern": {
-            // "file": 0
             "regexp": "done",
           },
         },
-        "owner": "odin",
-        "fileLocation": "absolute",
-        "pattern": {
-          "regexp": "^(.*)\\((\\d+):(\\d+)\\) (.*)$",
-          "file": 1,
-          "line": 2,
-          "column": 3,
-          "message": 4
-        }
+        "owner": "zig",
+        "fileLocation": ["relative", "${workspaceFolder}"],
       }
     },
     {

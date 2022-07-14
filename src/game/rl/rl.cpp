@@ -1,6 +1,0 @@
-#include "rl_common.c"
-#include "rl_draw.c"
-#include "rl_dungeon_gen.c"
-#include "rl_load.c"
-#include "rl_shadowcast.c"
-#include "rl_update.c"

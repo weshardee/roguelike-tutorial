@@ -3,3 +3,4 @@ bin
 zig-cache
 zig-out
 ./src/raylib
+alpha

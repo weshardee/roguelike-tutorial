@@ -6,6 +6,7 @@ const eql = std.mem.eql;
 const zeroes = std.mem.zeroes;
 const print = std.debug.print;
 const shadow = @import("rl_shadowcast.zig");
+const profiler = @import("profiler.zig");
 
 var rand = std.rand.DefaultPrng.init(0);
 
@@ -29,6 +30,7 @@ const TILES_X = 20;
 const TILES_Y = 20;
 const TILE_SIZE_X_HALF = TILE_SIZE_X / 2;
 const TILE_SIZE_Y_HALF = TILE_SIZE_Y / 2;
+const TILE_SIZE_PX = v2{ TILE_SIZE_X, TILE_SIZE_Y };
 const MID_TILE = v2{ TILE_SIZE_X_HALF, TILE_SIZE_Y_HALF };
 const Tiles = [TILES_X][TILES_Y]Tile;
 const Ent = usize;
@@ -129,9 +131,7 @@ const Tile = struct {
     open: bool,
     visible: bool,
     seen: bool,
-    dist_to_player: i32,
-    abs_dist_to_player: i32,
-    dir_to_player: v2i,
+    ent: ?Ent,
 };
 
 pub const State = struct {
@@ -152,6 +152,9 @@ pub fn load() void {
 }
 
 pub fn update() void {
+    profiler.push("update");
+    defer profiler.pop();
+
     check_input();
 
     // reset visibility
@@ -160,12 +163,22 @@ pub fn update() void {
     // reveal the spot the player is on
     // const player_pos = state.ecs.pos[state.player_e];
     const player_pos = state.ecs.pos[state.player_e];
-    reveal(player_pos);
-    shadow.cast(
-        player_pos,
-        is_wall,
-        reveal,
-    );
+    {
+        profiler.push("shadowcast");
+        defer profiler.pop();
+
+        shadow.cast(
+            player_pos,
+            is_wall,
+            reveal,
+        );
+    }
+
+    var e: Ent = 0;
+    while (e < MAX_ENTS) : (e += 1) {
+        state.ecs.pos_offset[e] -= state.ecs.pos_offset[e] * v2{ 0.7, 0.7 };
+    }
+
     draw();
 }
 
@@ -193,20 +206,43 @@ fn reveal(pos: v2i) void {
     state.tiles[x][y].seen = true;
 }
 
+fn place_new_spacial_ent(e: Ent, pos: v2i) void {
+    const x = @intCast(usize, pos[0]);
+    const y = @intCast(usize, pos[1]);
+    assert(state.tiles[x][y].ent == null);
+    state.tiles[x][y].ent = e;
+    state.ecs.pos[e] = pos;
+}
+
 fn reset() void {
     state.ecs = Ecs.init();
     reset_dungeon();
 
     var ecs = &state.ecs;
-    state.player_e = ecs.push(PLAYER);
-    ecs.rune[state.player_e] = '@';
-    ecs.pos[state.player_e] = get_random_open_pos();
-    ecs.color[state.player_e] = WHITE;
+    {
+        const e = ecs.push(PLAYER);
+        state.player_e = e;
+        ecs.rune[e] = '@';
+        ecs.color[e] = WHITE;
+        const pos = get_random_open_pos();
+        place_new_spacial_ent(e, pos);
+    }
 
-    var npc_e = ecs.push(SPACIAL);
-    ecs.rune[npc_e] = 'N';
-    ecs.pos[npc_e] = get_random_open_pos();
-    ecs.color[npc_e] = WHITE;
+    var num_monsters: usize = 10;
+    while (num_monsters > 0) : (num_monsters -= 1) {
+        var e = ecs.push(SPACIAL);
+        const pos = get_random_open_pos();
+        place_new_spacial_ent(e, pos);
+        if (rand.random().float(f32) < 0.8) {
+            // orc
+            ecs.rune[e] = 'o';
+            ecs.color[e] = .{ .r = 63, .g = 127, .b = 63, .a = 255 };
+        } else {
+            // troll
+            ecs.rune[e] = 'T';
+            ecs.color[e] = .{ .r = 0, .g = 127, .b = 0, .a = 255 };
+        }
+    }
 }
 
 fn draw() void {
@@ -234,13 +270,13 @@ fn draw() void {
         while (tile_y < TILES_Y) : (tile_y += 1) {
             var tile_pos = v2i{ @intCast(i32, tile_x), @intCast(i32, tile_y) };
             if (!is_seen(tile_pos)) continue;
-            if (is_open(tile_pos)) {
+            if (is_wall(tile_pos)) {
+                var color = if (state.tiles[tile_x][tile_y].visible) WALL_COLOR_VISIBLE else WALL_COLOR;
+                draw_rune(color, '#', tile_pos, .{ 0, 0 });
+            } else if (is_open(tile_pos)) {
                 var pos = pos_px(tile_pos) + DOT_OFFSET;
                 var color = if (is_visible(tile_pos)) FLOOR_DOT_COLOR else GRAY;
                 rl.DrawRectangleV(.{ .x = pos[0], .y = pos[1] }, DOT_SIZE, color);
-            } else {
-                var color = if (state.tiles[tile_x][tile_y].visible) WALL_COLOR_VISIBLE else WALL_COLOR;
-                draw_rune(color, '#', tile_pos, .{ 0, 0 });
             }
         }
     }
@@ -253,6 +289,8 @@ fn draw() void {
         draw_rune(ecs.color[e], ecs.rune[e], pos, ecs.pos_offset[e]);
     }
     rl.EndMode2D();
+
+    rl.DrawFPS(5, 5);
 }
 
 fn get_random_open_pos() v2i {
@@ -292,7 +330,7 @@ fn is_open(pos: v2i) bool {
     if (!in_bounds(pos)) return false;
     var x = @intCast(usize, pos[0]);
     var y = @intCast(usize, pos[1]);
-    return state.tiles[x][y].open;
+    return state.tiles[x][y].open and state.tiles[x][y].ent == null;
 }
 
 fn is_seen(pos: v2i) bool {
@@ -309,13 +347,17 @@ fn in_bounds(pos: v2i) bool {
 }
 
 fn pos_px(tp: v2i) v2 {
-    const x = @intToFloat(f32, tp[0]) * TILE_SIZE_X;
-    const y = @intToFloat(f32, tp[1]) * TILE_SIZE_Y;
+    return v2i_to_v2(tp) * TILE_SIZE_PX;
+}
+
+fn v2i_to_v2(p: v2i) v2 {
+    const x = @intToFloat(f32, p[0]);
+    const y = @intToFloat(f32, p[1]);
     return .{ x, y };
 }
 
 fn draw_rune(tint: Color, rune: u8, pos: v2i, offset: v2) void {
-    const p = pos_px(pos) + offset + state.rune_offset;
+    const p = TILE_SIZE_PX * (v2i_to_v2(pos) + offset) + state.rune_offset;
     rl.DrawTextCodepoint(state.font, rune, .{ .x = p[0], .y = p[1] }, FONT_SIZE, tint);
 }
 
@@ -361,12 +403,27 @@ fn move_entity(e: Ent, dir: v2i) bool {
     const ecs = &state.ecs;
     const next_pos = ecs.pos[e] + dir;
     if (!is_open(next_pos)) return false;
+
+    // update tile
+    const old_x = @intCast(usize, ecs.pos[e][0]);
+    const old_y = @intCast(usize, ecs.pos[e][1]);
+    assert(state.tiles[old_x][old_y].ent == e);
+    state.tiles[old_x][old_y].ent = null;
+    const new_x = @intCast(usize, next_pos[0]);
+    const new_y = @intCast(usize, next_pos[1]);
+    print("{}, {}\n", .{ new_x, new_y });
+    assert(state.tiles[new_x][new_y].ent == null);
+    state.tiles[new_x][new_y].ent = e;
+
     ecs.pos[e] = next_pos;
+
+    // set offset for animation
     const dir_v2 = v2{
         @intToFloat(f32, dir[0]),
         @intToFloat(f32, dir[1]),
     };
     ecs.pos_offset[e] = v2{ 0, -STEP_HEIGHT } - dir_v2;
+
     return true;
 }
 

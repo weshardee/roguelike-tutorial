@@ -1,0 +1,17 @@
+{
+    "collections": [
+        {
+            "name": "core",
+            "path": "~/dev/Odin/core"
+        },
+        {
+            "name": "vendor",
+            "path": "~/dev/Odin/vendor"
+        }
+
+    ],
+    "enable_document_symbols": true,
+    "enable_semantic_tokens": false,
+    "enable_hover": true,
+    "enable_snippets": true
+}

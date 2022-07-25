@@ -4,7 +4,7 @@ import "core:math/linalg"
 import "core:math/bits"
 import "core:math"
 
-v2i :: [2]i32
+v2i :: [2]int
 
 // https://www.albertford.com/shadowcasting/
 
@@ -22,12 +22,12 @@ Cardinal :: enum {
 // Note: round_ties_up is not the same as Python’s round. Zig’s round
 // will round away from 0, resulting in unwanted behavior for negative
 // numbers.
-round_ties_up :: proc(n: f32) -> i32 {
-	return i32(math.floor(n + 0.5))
+round_ties_up :: proc(n: f32) -> int {
+	return int(math.floor(n + 0.5))
 }
 
-round_ties_down :: proc(n: f32) -> i32 {
-	return i32(math.ceil(n - 0.5))
+round_ties_down :: proc(n: f32) -> int {
+	return int(math.ceil(n - 0.5))
 }
 
 Quadrant :: struct {
@@ -105,21 +105,21 @@ scan :: proc(quadrant: Quadrant, row: Row) {
 }
 
 Row :: struct {
-	depth:       i32,
+	depth:       int,
 	start_slope: f32,
 	end_slope:   f32,
 }
 
 Tile :: struct {
-	row: i32,
-	col: i32,
+	row: int,
+	col: int,
 }
 
 slope :: proc(tile: Tile) -> f32 {
 	return f32(2 * tile.col - 1) / f32(2 * tile.row)
 }
 
-is_symmetric :: proc(row: Row, _col: i32) -> bool {
+is_symmetric :: proc(row: Row, _col: int) -> bool {
 	depth := f32(row.depth)
 	col := f32(_col)
 	return (col >= (depth * row.start_slope) && col <= (depth * row.end_slope))
